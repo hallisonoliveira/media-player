@@ -34,3 +34,51 @@ A comunicação entre os serviços é feita através de canais Redis utilizando 
 - Redis instalado e em execução
 - Go 1.21 ou superior
 - `mpg123` ou outro player de linha de comando para reprodução MP3
+
+## Instalação
+
+### 1. Instalar o Redis
+Atualizar o sistema:
+```bash
+sudo apt update
+```
+
+Instalação:
+```bah
+sudo apt install redis-server
+```
+Configuração no _systemd_ para que o Redis seja inicializado juntamente com o sistema:
+```bash
+sudo systemctl enable redis-server
+```
+
+### 2. Instalar o Go (golang)
+Baixar o pacote _tar_ referente à versão e plataforma:
+```bash
+wget https://go.dev/dl/go1.22.3.linux-armv6l.tar.gz
+```
+
+Instalar:
+```bash
+sudo tar -C /usr/local -xzf go1.22.3.linux-armv6l.tar.gz
+```
+
+É necessário configurar a variável PATH para que o Go seja reconhecido como um comando do sistema e demais configurações de ambiente.
+Editar o arquivo `profile`
+```bash
+vim ~/.profile
+```
+Adicionar as seguintes variáveis de ambiente no final do arquivo:
+```bash
+export PATH=$PATH:/usr/local/go/bin
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
+```
+
+Para validar se a instalação e configuração foram feitas corretamente:
+```bash
+go version
+```
+
+## Licença
+Este projeto está licenciado sob a [MIT License](https://opensource.org/licenses/MIT).
