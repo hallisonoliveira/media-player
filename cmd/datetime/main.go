@@ -54,8 +54,6 @@ func run(ctx context.Context) {
 				continue
 			}
 
-			log.Printf("%s", data)
-
 			if err := q.Publish(topic, string(data)); err != nil {
 				log.Printf("Error publishing to topic %s: %v", topic, err)
 			}
