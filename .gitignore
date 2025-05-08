@@ -2,4 +2,5 @@ cmd/datetime/datetime
 cmd/display/display
 cmd/player/player
 cmd/remote-control/remote-control
+cmd/file-explorer/file-explorer
 sample/display/display
