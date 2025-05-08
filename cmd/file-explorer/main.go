@@ -12,20 +12,8 @@ import (
 	"syscall"
 )
 
-// {
-// 	"has_next": true,
-// 	"has_previous": true,
-// 	"item_selected": 1,
-// 	"items": [
-// 	  "../",
-// 	  "-Dance/",
-// 	  "-Rock/",
-// 	  "[ALL]",
-// 	  "Some Music.mp3"
-// 	]
-// }
-
 const COMMAND_TOPIC = "command"
+const FILE_EXPLORER_TOPIC = "file-explorer"
 
 type Item struct {
 	IsDir bool   `json:"is_dir"`
@@ -124,8 +112,7 @@ func (e *Explorer) Enter() error {
 		fmt.Println("ENTER - Explorer: ", newExplorer)
 		*e = *newExplorer
 	} else {
-		// Enviar para o canal do player, ex: "player.load"
-		// Aqui você pode publicar o caminho do arquivo MP3 no Redis
+		fmt.Println("Playing music")
 	}
 	return nil
 }
@@ -161,8 +148,8 @@ func handleCommand(q *queue.Queue, explorer *Explorer) func(topic, message strin
 		explorer.HasPrevious = explorer.SelectedIndex > 0
 
 		stateJson, _ := json.Marshal(explorer)
-		if err := q.Publish("file-explorer", string(stateJson)); err != nil {
-			fmt.Printf("Error publishing to topic %s: %v", "file-explorer", err)
+		if err := q.Publish(FILE_EXPLORER_TOPIC, string(stateJson)); err != nil {
+			fmt.Printf("Error publishing to topic %s: %v", FILE_EXPLORER_TOPIC, err)
 		}
 	}
 }
