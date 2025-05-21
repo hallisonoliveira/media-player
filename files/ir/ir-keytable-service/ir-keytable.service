@@ -1,0 +1,10 @@
+[Unit]
+Description=Load IR Keymap
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ir-keytable -p rc6 -w /lib/udev/rc_keymaps/hp_rc1762302-00_rc6.toml
+
+[Install]
+WantedBy=multi-user.target
