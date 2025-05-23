@@ -10,9 +10,10 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 )
 
-const COMMAND_TOPIC = "command"
+const REMOTE_CONTROL_TOPIC = "remote-control"
 const FILE_EXPLORER_TOPIC = "file-explorer"
 
 type Item struct {
@@ -22,11 +23,17 @@ type Item struct {
 }
 
 type Explorer struct {
+	Timestamp     string `json:"timestamp"`
 	CurrentDir    string `json:"current_dir"`
 	HasNext       bool   `json:"has_next`
 	HasPrevious   bool   `json:"has_previous`
 	SelectedIndex int    `json:"selected_index"`
 	Items         []Item `json:"items"`
+}
+
+type CommandData struct {
+	Timestamp string `json:"timestamp"`
+	Key       string `json:"key"`
 }
 
 func NewExplorer(startDir string) (*Explorer, error) {
@@ -52,6 +59,7 @@ func NewExplorer(startDir string) (*Explorer, error) {
 	}
 
 	return &Explorer{
+		Timestamp:     time.Now().Format("02-01-2006T15:04:05.000"),
 		CurrentDir:    startDir,
 		Items:         items,
 		SelectedIndex: 0,
@@ -68,12 +76,13 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 
 	q := queue.NewQueue()
-	if err := q.Subscribe(ctx, handleCommand(q, explorer), COMMAND_TOPIC); err != nil {
+	if err := q.Subscribe(ctx, handleCommand(q, explorer), REMOTE_CONTROL_TOPIC); err != nil {
 		fmt.Printf("Error subscribing to topic: %v", err)
 	}
 
@@ -82,6 +91,11 @@ func main() {
 		log.Println("Stopping service...")
 		cancel()
 	}()
+	<-ctx.Done()
+}
+
+func (e *Explorer) RefreshTimestamp() {
+	e.Timestamp = time.Now().Format("02-01-2006T15:04:05.000")
 }
 
 func (e *Explorer) Next() {
@@ -129,27 +143,39 @@ func (e *Explorer) Back() error {
 
 func handleCommand(q *queue.Queue, explorer *Explorer) func(topic, message string) {
 	return func(topic, message string) {
-		switch message {
-		case "next":
+		var command CommandData
+		if err := json.Unmarshal([]byte(message), &command); err != nil {
+			log.Printf("Error parsing JSON for CommandData: %v", err)
+			return
+		}
+
+		switch command.Key {
+		case "KEY_DOWN":
 			explorer.Next()
-		case "previous":
+			publish(explorer, q)
+		case "KEY_UP":
 			explorer.Previous()
-		case "enter":
+			publish(explorer, q)
+		case "KEY_OK":
 			if err := explorer.Enter(); err != nil {
 				fmt.Println("Error on enter:", err)
 			}
-		case "back":
+			publish(explorer, q)
+		case "KEY_BACKSPACE":
 			if err := explorer.Back(); err != nil {
 				fmt.Println("Error on back:", err)
 			}
+			publish(explorer, q)
 		}
+	}
+}
 
-		explorer.HasNext = explorer.SelectedIndex < len(explorer.Items)-1
-		explorer.HasPrevious = explorer.SelectedIndex > 0
-
-		stateJson, _ := json.Marshal(explorer)
-		if err := q.Publish(FILE_EXPLORER_TOPIC, string(stateJson)); err != nil {
-			fmt.Printf("Error publishing to topic %s: %v", FILE_EXPLORER_TOPIC, err)
-		}
+func publish(explorer *Explorer, q *queue.Queue) {
+	explorer.HasNext = explorer.SelectedIndex < len(explorer.Items)-1
+	explorer.HasPrevious = explorer.SelectedIndex > 0
+	explorer.RefreshTimestamp()
+	stateJson, _ := json.Marshal(explorer)
+	if err := q.Publish(FILE_EXPLORER_TOPIC, string(stateJson)); err != nil {
+		fmt.Printf("Error publishing to topic %s: %v", FILE_EXPLORER_TOPIC, err)
 	}
 }
