@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const topic = "datetime"
+const TOPIC = "datetime"
 
 type DateTime struct {
 	Timestamp string `json:"timestamp"`
@@ -54,8 +54,8 @@ func run(ctx context.Context) {
 				continue
 			}
 
-			if err := q.Publish(topic, string(data)); err != nil {
-				log.Printf("Error publishing to topic %s: %v", topic, err)
+			if err := q.Publish(TOPIC, string(data)); err != nil {
+				log.Printf("Error publishing to topic %s: %v", TOPIC, err)
 			}
 		}
 	}

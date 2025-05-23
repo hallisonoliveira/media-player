@@ -36,7 +36,6 @@ func main() {
 		log.Println("Service finished")
 	}()
 
-	// Goroutine to cancel the context
 	go func() {
 		<-sigChan
 		log.Println("Stopping service...")

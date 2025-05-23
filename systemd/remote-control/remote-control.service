@@ -1,0 +1,17 @@
+[Unit]
+Description=Service responsible for handling the commands received by ir sensor
+After=network.target redis.service
+
+[Service]
+ExecStartPre=/bin/bash -c 'for i in {1..5}; do redis-cli ping && exit 0 || sleep 1; done; exit 1'
+ExecStart=/usr/local/bin/remote-control
+Restart=on-failure
+User=remote-control-service
+Group=remote-control-service
+WorkingDirectory=/usr/local/bin
+StandardOutput=journal
+StandardError=journal
+TimeoutSec=5
+
+[Install]
+WantedBy=multi-user.target
