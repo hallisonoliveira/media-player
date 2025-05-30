@@ -1,0 +1,17 @@
+[Unit]
+Description=Service responsible for the file navigation thru media path
+After=network.target redis.service remote-control.service
+
+[Service]
+ExecStartPre=/bin/bash -c 'for i in {1..5}; do redis-cli ping && exit 0 || sleep 1; done; exit 1'
+ExecStart=/usr/local/bin/file-explorer
+Restart=on-failure
+User=file-explorer-service
+Group=file-explorer-service
+WorkingDirectory=/usr/local/bin
+StandardOutput=journal
+StandardError=journal
+TimeoutSec=5
+
+[Install]
+WantedBy=multi-user.target

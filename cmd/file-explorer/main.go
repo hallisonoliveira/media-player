@@ -16,6 +16,8 @@ import (
 const REMOTE_CONTROL_TOPIC = "remote-control"
 const FILE_EXPLORER_TOPIC = "file-explorer"
 
+const ROOT_PATH = "/opt/file-explorer-root"
+
 type Item struct {
 	IsDir bool   `json:"is_dir"`
 	Name  string `json:"name"`
@@ -69,8 +71,7 @@ func NewExplorer(startDir string) (*Explorer, error) {
 }
 
 func main() {
-	root := "/home/hallison/media"
-	explorer, err := NewExplorer(root)
+	explorer, err := NewExplorer(ROOT_PATH)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -82,9 +83,12 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 
 	q := queue.NewQueue()
-	if err := q.Subscribe(ctx, handleCommand(q, explorer), REMOTE_CONTROL_TOPIC); err != nil {
-		fmt.Printf("Error subscribing to topic: %v", err)
-	}
+	go func() {
+		if err := q.Subscribe(ctx, handleCommand(q, explorer), REMOTE_CONTROL_TOPIC); err != nil {
+			fmt.Printf("Error subscribing to topic: %v\n", err)
+			cancel()
+		}
+	}()
 
 	go func() {
 		<-sigChan
@@ -99,7 +103,7 @@ func (e *Explorer) RefreshTimestamp() {
 }
 
 func (e *Explorer) Next() {
-	if e.SelectedIndex <= len(e.Items)-1 {
+	if e.SelectedIndex < (len(e.Items) - 1) {
 		e.SelectedIndex++
 	}
 }
@@ -123,7 +127,6 @@ func (e *Explorer) Enter() error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("ENTER - Explorer: ", newExplorer)
 		*e = *newExplorer
 	} else {
 		fmt.Println("Playing music")
@@ -132,6 +135,9 @@ func (e *Explorer) Enter() error {
 }
 
 func (e *Explorer) Back() error {
+	if e.CurrentDir == ROOT_PATH {
+		return nil
+	}
 	parent := filepath.Dir(e.CurrentDir)
 	newExplorer, err := NewExplorer(parent)
 	if err != nil {
